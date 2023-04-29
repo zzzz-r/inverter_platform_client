@@ -1,94 +1,179 @@
 <template>
   <div>
     <a-drawer
-        title="添加电站"
+        :title="plantId ? '编辑电站' : '添加电站'"
         placement="top"
         height="600"
         :visible="ifVisible"
         :body-style="{ paddingBottom: '80px' }"
-        @close="onAddDrawerClose"
+        @close="onAddDrawerClose(true)"
     >
-      <div style="margin: 0 50px">
+      <div>
         <a-steps :current="current">
           <a-step v-for="item in steps" :key="item.title" :title="item.title" />
         </a-steps>
         <div class="steps-content">
-          <a-form :form="form" :model="editableItem" :label-col="{ span: 5 }" :wrapper-col="{ span: 15 }" >
+          <a-form-model ref="ruleForm" :rules="rules" :model="editableItem"
+                        :label-col="{ span: 5 }" :wrapper-col="{ span: 15 }" >
             <template v-if="current === 0">
               <!-- 第一步要渲染的组件 -->
-                <a-form-item label="电站名称">
-                  <a-input v-model="editableItem.name"
-                           v-decorator="['name', { rules: [{ required: true, message: '请输入电站名称' }] }]"
-                  />
-                </a-form-item>
-              <a-form-item label="电站区域">
+              <a-form-model-item label="电站名称" prop="name">
+                <a-input v-model="editableItem.name"/>
+              </a-form-model-item>
+
+              <a-form-model-item label="电站位置">
                 <div id="container"></div>
-              </a-form-item>
-              <a-form-item label="Select" has-feedback>
-                <a-select
-                    v-decorator="[
-          'select',
-          { rules: [{ required: true, message: 'Please select your country!' }] },
-        ]"
-                    placeholder="Please select a country"
+              </a-form-model-item>
+
+              <div style="display: flex;justify-content: center">
+                  <a-form-model-item label="省份" prop="province" >
+                    <a-select class="posSelect" v-model="editableItem.province" placeholder="请选择省份"
+                              @change="onProvinceChange">
+                      <a-select-option @click="handleClickProvince" v-for="(province, index) in provinces" :key="index" :value="province">{{ province }}</a-select-option>
+                    </a-select>
+                  </a-form-model-item>
+                  <a-form-model-item label="城市" prop="city" >
+                    <a-select class="posSelect" v-model="editableItem.city" placeholder="请选择城市"
+                              @change="onCityChange" :disabled="!(cities.length>0||editableItem.city)">
+                      <a-select-option @click="handleClickCity" v-for="(city, index) in cities" :key="index" :value="city">{{ city }}</a-select-option>
+                    </a-select>
+                  </a-form-model-item>
+                  <a-form-model-item label="区县" prop="county" >
+                    <a-select class="posSelect" v-model="editableItem.county" placeholder="请选择区县"
+                              @change="onCountyChange" :disabled="!(counties.length>0||editableItem.county)">
+                      <a-select-option v-for="(county, index) in counties" :key="index" :value="county">{{ county }}</a-select-option>
+                    </a-select>
+                  </a-form-model-item>
+              </div>
+
+              <a-form-model-item label="详细地址" prop="address">
+                  <a-input id="address" v-model="editableItem.address"/>
+                </a-form-model-item>
+
+              <div style="display: flex;justify-content: center">
+                <a-form-model-item label="经度" prop="lng" style="width: 36%">
+                  <a-input id="lng" v-model="editableItem.lng"/>
+                </a-form-model-item>
+                <a-form-model-item label="纬度" prop="lat" style="width: 36%">
+                  <a-input id="lat" v-model="editableItem.lat"/>
+                </a-form-model-item>
+              </div>
+
+              <a-form-model-item label="建站时间">
+                <a-input :disabled="true" :value="getDate()"/>
+              </a-form-model-item>
+
+              <a-form-model-item label="封面">
+                <a-upload
+                    :file-list="editableItem.cover"
+                    :action=uploadURL
+                    list-type="picture-card"
+                    @change="handelCoverUploadChange"
                 >
-                  <a-select-option value="china">
-                    China
+                  <div v-if="editableItem.cover.length < 1">
+                    <a-icon type="plus" /><div>上传</div>
+                  </div>
+                </a-upload>
+              </a-form-model-item>
+            </template>
+            <template v-if="current === 1">
+              <!-- 第二步要渲染的组件 -->
+              <a-row>
+                <a-col :span="12">
+                  <a-form-model-item label="电站类型">
+                <a-select v-model="editableItem.plantType">
+                  <a-select-option value="分布式户用">
+                    分布式户用
                   </a-select-option>
-                  <a-select-option value="usa">
-                    U.S.A
+                  <a-select-option value="分布式商业">
+                    分布式商业
+                  </a-select-option>
+                  <a-select-option value="分布式工业">
+                    分布式工业
+                  </a-select-option>
+                  <a-select-option value="地面电站">
+                    地面电站
                   </a-select-option>
                 </a-select>
-              </a-form-item>
-<!--              <template class="posSelect-container">-->
-                <a-form-item label="province" has-feedback>
-                  <a-select v-decorator="['province', { rules: [{ required: true, message: '请输入电站名称' }] }]"
-                      class="posSelect" v-model="province" placeholder="请选择省份" @change="onProvinceChange">
-                    <a-select-option @click="handleClickProvince" v-for="(province, index) in provinces" :key="index" :value="province">{{ province }}</a-select-option>
-                  </a-select>
-                </a-form-item>
-                <a-form-item>
-                  <a-select  v-decorator="['name2', { rules: [{ required: true, message: '请输入电站名称' }] }]"
-                      class="posSelect" v-model="city" placeholder="请选择城市" @change="onCityChange" v-show="cities.length>0||city">
-                    <a-select-option @click="handleClickCity" v-for="(city, index) in cities" :key="index" :value="city">{{ city }}</a-select-option>
-                  </a-select>
-                </a-form-item>
-                <a-form-item>
-                  <a-select  v-decorator="['name3', { rules: [{ required: true, message: '请输入电站名称' }] }]"
-                      class="posSelect" v-model="county" placeholder="请选择区县" @change="onCountyChange" v-show="counties.length>0||county">
-                    <a-select-option v-for="(county, index) in counties" :key="index" :value="county">{{ county }}</a-select-option>
-                  </a-select>
-                </a-form-item>
-<!--              </template>-->
-              <a-form-item label="详细地址">
-                <a-input id="address" v-model="editableItem.address"
-                         v-decorator="['address', { rules: [{ required: true, message: '请输入电站详细地址' }] }]"
-                />
-              </a-form-item>
-              <a-form-item label="经纬度" :label-col="{ span: 5 }" :wrapper-col="{ span: 15 }">
-                <a-input id="lng" v-model="editableItem.lng"
-                         v-decorator="['lng', { rules: [{ required: true, message: '请输入经度' }] }]"
-                         style="width: 48%; margin-right: 4%"
-                />
-                <a-input id="lat" v-model="editableItem.lat"
-                         v-decorator="['lat', { rules: [{ required: true, message: '请输入纬度' }] }]"
-                         style="width: 48%"
-                />
-              </a-form-item>
-            </template>
-            <template v-else-if="current === 1">
-              <!-- 第二步要渲染的组件 -->
-              <input type="text" placeholder="请输入系统信息" />
+              </a-form-model-item>
+                </a-col>
+                <a-col :span="12">
+                  <a-form-model-item label="系统类型">
+                <a-select v-model="editableItem.sysType">
+                  <a-select-option value="光伏+电网">
+                    光伏+电网
+                  </a-select-option>
+                  <a-select-option value="光伏+电网+用电">
+                    光伏+电网+用电
+                  </a-select-option>
+                  <a-select-option value="光伏+电网+用电+储能">
+                    光伏+电网+用电+储能
+                  </a-select-option>
+                </a-select>
+              </a-form-model-item>
+                </a-col>
+              </a-row>
+
+              <a-row>
+                <a-col :span="12">
+                  <a-form-model-item label="装机容量(kWp)" prop="capacity">
+                <a-input v-model="editableItem.capacity"/>
+              </a-form-model-item>
+                </a-col>
+                <a-col :span="12">
+                  <a-form-model-item label="计划自发自用率(%)" v-if="!(editableItem.sysType==='光伏+电网')">
+                <a-input v-model="editableItem.selfUseRate"/>
+              </a-form-model-item>
+                </a-col>
+              </a-row>
             </template>
             <template v-else-if="current === 2">
               <!-- 第三步要渲染的组件 -->
-              <input type="text" placeholder="请输入收益信息" />
+              <a-row>
+                <a-col :span="12">
+                  <a-form-model-item label="度电收益(元/kWh)">
+                    <a-input v-model="editableItem.elecBenefit"/>
+                  </a-form-model-item>
+                </a-col>
+
+                <a-col :span="12">
+                  <a-form-model-item label="补贴收益(元/kWh)">
+                    <a-input v-model="editableItem.subsidyBenefit"/>
+                  </a-form-model-item>
+                </a-col>
+              </a-row>
+
+              <a-row>
+                <a-col :span="12">
+                  <a-form-model-item label="总成本(元)">
+                    <a-input v-model="editableItem.cost"/>
+                  </a-form-model-item>
+                </a-col>
+
+                <a-col :span="12">
+                  <a-form-model-item label="日还款(元)">
+                    <a-input v-model="editableItem.daily_repay"/>
+                  </a-form-model-item>
+                </a-col>
+              </a-row>
             </template>
             <template v-else-if="current === 3">
               <!-- 第四步要渲染的组件 -->
-              <input type="text" placeholder="请输入业主信息" />
+              <a-row>
+                <a-col :span="12">
+                  <a-form-model-item label="业主姓名">
+                    <a-input v-model="editableItem.ownerName"/>
+                  </a-form-model-item>
+                </a-col>
+                <a-col :span="12">
+                  <a-form-model-item label="业主联系电话">
+                    <a-input v-model="editableItem.ownerTel"/>
+                  </a-form-model-item>
+                </a-col>
+              </a-row>
+
             </template>
-          </a-form>
+          </a-form-model>
         </div>
         <div class="steps-action">
           <a-button v-if="current > 0" class="steps-but" @click="prev">
@@ -101,7 +186,7 @@
               v-if="current == steps.length - 1"
               type="primary"
               class="steps-but"
-              @click="$message.success('Processing complete!')"
+              @click="onAddPlantSubmit"
           >
             提交
           </a-button>
@@ -112,15 +197,15 @@
 </template>
 
 <script>
-import GetPosMap from "@/components/GetPosMap.vue";
 import AMapLoader from '@amap/amap-jsapi-loader';
+import {uploadURL} from "@/config/config";
+import {addPlant, detailPlant, editPlant} from "@/api/api";
 window._AMapSecurityConfig = {
   securityJsCode: 'f06653a86b643465e607ae67ffddc067'
 }
 
 export default {
   name: "PlantFrom",
-  components: {GetPosMap},
   data() {
     return{
       current: 0,
@@ -144,32 +229,35 @@ export default {
         }
       ],
       editableItem: {
-        id: "",
-        name: "",
-        province: "",
-        city: "",
-        county: "",
-        address: "",
-        lat: "",
-        lng: "",
-        buildDate: "",
-        plantType: "",
-        sysType: "",
-        capacity: "",
-        selfUseRate: "",
-        elecBenefit: "",
-        subsidyBenefit: "",
-        cost: "",
-        daily_repay: "",
-        ownerName: "",
-        ownerTel: "",
-        cover: "",
+        name: null,
+        province: undefined,
+        city: undefined,
+        county: undefined,
+        address: null,
+        lat: null,
+        lng: null,
+        plantType: null,
+        sysType: null,
+        capacity: null,
+        selfUseRate: null,
+        elecBenefit: null,
+        subsidyBenefit: null,
+        cost: null,
+        daily_repay: null,
+        ownerName: null,
+        ownerTel: null,
+        cover:[],
       },
-      lat: 0,
-      lng: 0,
-      province: undefined,
-      city: undefined,
-      county: undefined,
+      rules: {
+        name: [{ required: true, message: '请输入电站名称', trigger: 'blur' }],
+        province: [{ required: true, message: '请选择省份', trigger: 'change' }],
+        city: [{ required: true, message: '请选择城市', trigger: 'change' }],
+        county: [{ required: true, message: '请选择区县', trigger: 'change' }],
+        address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
+        lng: [{ required: true, message: '请输入经度', trigger: 'blur' }],
+        lat: [{ required: true, message: '请输入纬度', trigger: 'blur' }],
+        capacity: [{ required: true, message: '请输入装机容量', trigger: 'blur' }],
+      },
       provinces: [], // 保存所有省份数据
       cities: [], // 保存当前省份下的所有城市数据
       counties: [], // 保存当前城市下的所有区县数据
@@ -178,31 +266,47 @@ export default {
   },
   props:{
     ifVisible: Boolean,
-  },
-  watch:{
-    province(){
-      if(this.province)
-        this.onProvinceChange();
-    },
-    city(){
-      if(this.city)
-        this.onCityChange();
-    },
-    county(){
-      if(this.county)
-        this.onCountyChange();
-    },
+    plantId: Number,
   },
   methods:{
-    onAddDrawerClose() {
+    uploadURL() {
+      return uploadURL
+    },
+    onAddDrawerClose(ifClearFrom) {
       this.ifVisible = false;
-      this.$emit("drawerClose",this.ifVisible)
+      this.current = 0;
+      this.provinces = [];
+      this.cities = [];
+      this.counties = [];
+      if(ifClearFrom){
+        for (let key in this.editableItem) {
+          this.editableItem[key] = undefined;
+        }
+        this.editableItem.cover = [];
+      }
+      this.$emit("drawerClose",this.ifVisible);
     },
     next() {
-      this.current++;
+      this.$refs.ruleForm.validate(valid => {
+        if (valid) {
+          this.current++;
+        }
+      });
     },
     prev() {
       this.current--;
+    },
+    getDate(){
+      if(this.plantId){
+        return this.editableItem.buildDate;
+      }
+      else{
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        return `${year}-${month}-${day}`;
+      }
     },
     initAMap() {
       AMapLoader.load({
@@ -245,8 +349,8 @@ export default {
 
         // 添加地图点击事件
         this.map.on("click", (event) => {
-          this.lng = event.lnglat.getLng(); // 保存点击位置的经纬度信息
-          this.lat = event.lnglat.getLat();
+          this.editableItem.lng = event.lnglat.getLng(); // 保存点击位置的经纬度信息
+          this.editableItem.lat = event.lnglat.getLat();
 
           // 移除旧标记
           if (this.marker) {
@@ -259,15 +363,15 @@ export default {
             city: "全国"
           });
           // 使用 AMap.Geocoder 对象获取完整位置信息
-          geocoder.getAddress([this.lng, this.lat], (status, result) => {
+          geocoder.getAddress([this.editableItem.lng, this.editableItem.lat], (status, result) => {
             if (status === "complete" && result.regeocode) {
               const addressComponent = result.regeocode.addressComponent;
-              this.province = addressComponent.province; // 保存省份信息
-              this.city = addressComponent.city; // 保存城市信息
-              this.county = addressComponent.district; // 保存区县信息
+              this.editableItem.province = addressComponent.province; // 保存省份信息
+              this.editableItem.city = addressComponent.city; // 保存城市信息
+              this.editableItem.county = addressComponent.district; // 保存区县信息
               // 创建标记
               this.marker = new AMap.Marker({
-                position: [this.lng, this.lat],
+                position: [this.editableItem.lng, this.editableItem.lat],
                 map: this.map,
               });
             }
@@ -287,7 +391,7 @@ export default {
         extensions: "all",
         subdistrict: 1,
       });
-      districtSearch.search(this.province, (status, result) => {
+      districtSearch.search(this.editableItem.province, (status, result) => {
         if (status === "complete") {
           const districts = result.districtList[0].districtList;
           this.cities = districts.map((district) => district.name);
@@ -305,7 +409,7 @@ export default {
         extensions: "all",
         subdistrict: 1,
       });
-      districtSearch.search(this.city, (status, result) => {
+      districtSearch.search(this.editableItem.city, (status, result) => {
         if (status === "complete") {
           const districts = result.districtList[0].districtList;
           this.counties = districts.map((district) => district.name);
@@ -315,35 +419,131 @@ export default {
     onCountyChange() {
       console.log("onCountyChange")
       // 根据选中的省份、城市和区县，获取对应的经纬度和详细地址信息
-      const address = `${this.province}${this.city}${this.county}`;
+      const address = `${this.editableItem.province}${this.editableItem.city}${this.editableItem.county}`;
       const geocoder = new AMap.Geocoder({
         city: address,
       });
       geocoder.getLocation(address, (status, result) => {
         if (status === "complete" && result.geocodes.length) {
           const location = result.geocodes[0].location;
-          this.lat = location.lat;
-          this.lng = location.lng;
+          this.editableItem.lat = location.lat;
+          this.editableItem.lng = location.lng;
           // 将地图移动到选中位置
-          this.map.setCenter([this.lng, this.lat]);
+          this.map.setCenter([this.editableItem.lng, this.editableItem.lat]);
           this.map.setZoom(10);
         }
       });
     },
     handleClickProvince() {
       console.log("handleClickProvince")
-      this.city = undefined;
-      this.county = undefined;
+      this.editableItem.city = undefined;
+      this.editableItem.county = undefined;
     },
     handleClickCity(){
       console.log("handleClickCity")
-      this.county = undefined;
+      this.editableItem.county = undefined;
+    },
+    handelCoverUploadChange(res){
+      this.editableItem.cover = res.fileList;
+      if(res.file.status === "done"){
+        this.$message.success('上传成功')
+        this.editableItem.cover = [];
+        this.editableItem.cover.push({
+          uid: res.file.uid,
+          url: this.coverUrlWithPrefix(res.file.response.data),
+        })
+      }else if(res.file.status === "error"){
+        this.$message.error('上传失败!只能上传小于1Mb的图片文件！')
+        this.editableItem.cover = [];
+      }else if(res.file.status === 'removed'){
+        const removedFile = res.file
+        const index = this.editableItem.cover.findIndex(file => file.uid === removedFile.uid)
+        if (index !== -1) {
+          this.editableItem.cover.splice(index, 1)
+        }
+      }
+    },
+    onAddPlantSubmit(){
+      this.$refs.ruleForm.validate(valid => {
+        if (valid) {
+          let param = JSON.parse(JSON.stringify(this.editableItem));
+          param.cover= this.editableItem.cover.length>0? this.coverUrlWithoutPrefix(this.editableItem.cover[0].url) : null;
+          if(this.plantId){ //修改
+            editPlant(this.plantId, param).then(res=>{
+              console.log(res)
+              if(res.code === 0){
+                this.$message.success(res.msg)
+              } else{
+                this.$message.error(res.msg)
+              }
+            })
+            this.onAddDrawerClose(true);
+          }else{ //添加
+            addPlant(param).then(res=>{
+              console.log(res)
+              if(res.code === 0){
+                this.$message.success(res.msg)
+                this.onAddDrawerClose(true);
+              } else{
+                this.$message.error(res.msg)
+                this.onAddDrawerClose(false);
+              }
+            })
+          }
+        } else {
+          return false;
+        }
+      });
     }
   },
   mounted() {
     this.initAMap();
-    console.log(this.cities.length)
   },
+  created(){
+    this.$watch('editableItem.province', (newVal, oldVal) => {
+      if(newVal)
+        this.onProvinceChange();
+    })
+    this.$watch('editableItem.city', (newVal, oldVal) => {
+      if(newVal)
+        this.onCityChange();
+    })
+    this.$watch('editableItem.county', (newVal, oldVal) => {
+      if(newVal)
+        this.onCountyChange();
+    })
+    this.$watch('current', (newVal, oldVal) => {
+      if(newVal === 0){
+        this.initAMap();
+      }
+    })
+    this.$watch('plantId', (newVal, oldVal) => {
+      // 编辑
+      if(newVal != null){
+        detailPlant(this.plantId).then(res=>{
+          this.editableItem = JSON.parse(JSON.stringify(res.data));
+          this.editableItem.cover = []
+          this.editableItem.cover.push({uid:-1, url:this.coverUrlWithPrefix(res.data.cover)})
+          console.log(this.editableItem)
+        })
+      }
+    })
+    this.$watch('ifVisible', (newVal, oldVal) => {
+      // 打开表单
+      if(newVal){
+        this.initAMap();
+        if(this.plantId){
+          detailPlant(this.plantId).then(res=>{
+            this.editableItem = JSON.parse(JSON.stringify(res.data));
+            this.editableItem.cover = []
+            if(res.data.cover)
+              this.editableItem.cover.push({uid:-1, url:this.coverUrlWithPrefix(res.data.cover)})
+            console.log(this.editableItem)
+          })
+        }
+      }
+    })
+  }
 }
 </script>
 
@@ -369,9 +569,9 @@ export default {
   border: 1px dashed #e9e9e9;
   border-radius: 6px;
   background-color: #fff;
-  min-height: 200px;
+  min-height: 100px;
   text-align: center;
-  padding: 20px 20px;
+  padding-top: 20px;
 }
 .steps-action {
   margin-top: 24px;

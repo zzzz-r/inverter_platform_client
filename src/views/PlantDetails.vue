@@ -1,6 +1,5 @@
 <template>
   <a-layout>
-    <div>{{plantId}}</div>
     <a-layout>
       <!--      侧边栏-->
       <a-layout-sider width="160px" style="background: #fff">
@@ -10,16 +9,24 @@
         <a-menu
             mode="vertical"
             :default-selected-keys="['1']"
-            :default-open-keys="['sub1']"
             :style="{ height: '100%', borderRight: 0 }"
+            @click="handleClickMenu"
         >
+          <a-menu-item key="0">
+            <router-link :to="{ path: '/platform/plant'}" style="text-decoration:underline">返回电站列表</router-link>
+          </a-menu-item>
+
           <a-menu-item key="1">
-            <a-icon type="mail" />
-            数据看板
+            <router-link :to="{ path: '/platform/plantDetails/board'}">
+              <a-icon type="calendar" />
+              数据看板
+            </router-link>
           </a-menu-item>
           <a-menu-item key="2">
-            <a-icon type="calendar" />
-            设备列表
+            <router-link :to="{ path: '/platform/plantDetails/devices'}">
+              <a-icon type="calendar" />
+              设备列表
+            </router-link>
           </a-menu-item>
           <a-menu-item key="3">
             <a-icon type="calendar" />
@@ -29,15 +36,25 @@
       </a-layout-sider>
 
       <a-layout style="padding: 0 20px 20px">
-        <a-breadcrumb style="margin: 10px 0">
-          <a-breadcrumb-item><a-icon type="home"/></a-breadcrumb-item>
-          <a-breadcrumb-item>List</a-breadcrumb-item>
-          <a-breadcrumb-item>App</a-breadcrumb-item>
-        </a-breadcrumb>
+<!--        <a-breadcrumb separator="/" style="margin: 10px 0">-->
+<!--          <a-breadcrumb-item href="/platform"><a-icon type="home"/></a-breadcrumb-item>-->
+<!--          <a-breadcrumb-item href="/platform/plant">List</a-breadcrumb-item>-->
+<!--          <a-breadcrumb-item>App</a-breadcrumb-item>-->
+<!--        </a-breadcrumb>-->
+<!--        <a-breadcrumb :routes="breadcrumbs">-->
+<!--          <template slot="itemRender" slot-scope="{ route, params, routes, paths }">-->
+<!--        <span v-if="routes.indexOf(route) === routes.length - 1">-->
+<!--          {{ route.breadcrumbName }}-->
+<!--        </span>-->
+<!--            <router-link v-else :to="`${basePath}/${paths.join('/')}`">-->
+<!--              {{ route.breadcrumbName }}-->
+<!--            </router-link>-->
+<!--          </template>-->
+<!--        </a-breadcrumb>-->
         <a-layout-content
-            :style="{ background: '#fff', padding: '10px', overflow: 'auto'}"
+            :style="{ overflow: 'auto', marginTop: '10px'}"
         >
-          <DeviceList/>
+          <router-view/>
         </a-layout-content>
 
       </a-layout>
@@ -47,36 +64,42 @@
 
 <script>
 import DeviceList from "@/components/DeviceList.vue";
+import router from '@/router'
 export default {
   name: "PlantDetails",
+  props:{
+
+  },
   data() {
     return {
       collapsed: false,
       plantId: '',
+      basePath: '/platform',
+      breadcrumbs: [],
     };
+  },
+  methods:{
+    handleClickMenu(e){
+      console.log(e);
+      if(e.key === "2"){
+        console.log("1");
+      }
+    },
   },
   components:{
     DeviceList,
   },
   created() {
-    this.plantId = this.$route.query.plantId  //通过router-link路由获取传参
+    this.plantId = localStorage.getItem("plantId") ? JSON.parse(localStorage.getItem("plantId")) : null
+    // const matchedRoutes = router.currentRoute.matched
+    // this.breadcrumbs = matchedRoutes.map(route => ({
+    //   path: route.path,
+    //   breadcrumbName: route.meta?.breadcrumb || route.name
+    // }))
   }
 };
 </script>
 
-<style>
-.header, .ant-breadcrumb {
-  text-align: left;
-}
-/* 将面包屑上下居中 */
-.ant-breadcrumb {
-  display: flex;
-  align-items: center;
-}
-/*.plantBtn{*/
-/*  margin-top: 15px;*/
-/*  width: 80%;*/
-/*  !*background-color: #42b983;*!*/
-/*}*/
+<style scoped>
 
 </style>

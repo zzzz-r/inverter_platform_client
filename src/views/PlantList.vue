@@ -3,6 +3,7 @@
     <a-layout-content
         :style="{ background: '#fff', padding: '10px', overflow: 'auto'}"
     >
+      <PlantFrom :ifVisible="ifAddDrawerVisible" :plantId="passPlantID" @drawerClose="onAddDrawerClose" ></PlantFrom>
       <div style="margin-bottom: 12px; display: flex; justify-content: space-between">
         <div style="width: 70%;text-align: left">
           <a-input-search v-model="plantIdSearchText" placeholder="输入要查找的电站名称" style="width: 50%" @search="onSearch" class="mr5" />
@@ -10,13 +11,15 @@
           <a-button @click="reSetFilter">重置</a-button>
         </div>
         <div>
-          <a-button type="primary" class="mr5" @click="showAddDrawer">
+          <a-button shape="round" class="mr5" @click="exportData">
+            导出数据<a-icon type="download" />
+          </a-button>
+          <a-button type="primary" class="mr5" @click="showAddDrawer(null)">
             添加电站
           </a-button>
           <a-button type="primary" @click="showDeleteConfirm(null)" :disabled="!hasSelected" style="margin-right: 20px">
             批量删除
           </a-button>
-          <PlantFrom :ifVisible="ifAddDrawerVisible" @drawerClose="onAddDrawerClose" ></PlantFrom>
         </div>
       </div>
       <a-table
@@ -41,10 +44,7 @@
             接入中
           </a-tag>
           <a-tag color="red" v-else-if="text === 2">
-            全部设备离线
-          </a-tag>
-          <a-tag color="orange" v-else-if="text === 3">
-            部分设备离线
+            设备离线
           </a-tag>
         </template>
 
@@ -78,7 +78,7 @@
             <template slot="title">
               编辑
             </template>
-            <a-button type="link"><a-icon type="edit" /></a-button>
+            <a-button type="link" @click="showAddDrawer(text.id)"><a-icon type="edit" /></a-button>
           </a-tooltip>
 
           <a-divider type="vertical" style="margin:0"/>
@@ -96,8 +96,8 @@
             <template slot="title">
               查看
             </template>
-            <a-button type="link">
-              <router-link :to="{ path: '/plant/details', query: { plantId: text.id } }"><a-icon type="profile" /></router-link>
+            <a-button type="link" @click="toPlantDetail(text.id)">
+              <a-icon type="profile" />
             </a-button>
           </a-tooltip>
 
@@ -113,6 +113,7 @@
 import axios from 'axios'
 import {deletePlant, listPlant} from "@/api/api";
 import PlantFrom from "@/components/PlantFrom.vue";
+import {plantListExpURL} from "@/config/config";
 
 const columns = [
   {
@@ -235,6 +236,7 @@ export default {
       filteredData: [],
       ifSearchFiltered: false,
       ifAddDrawerVisible: false,
+      passPlantID: null,
     };
   },
   computed: {
@@ -246,10 +248,9 @@ export default {
     fetchData() {
       this.loading = true;
       listPlant(null)
-          .then(response => {
-            this.data = response.data.data.records
+          .then(res => {
+            this.data = res.data.records
             this.loading=false
-            console.log(this.data)
           })
           .catch(error => {
             console.error(error)
@@ -327,11 +328,20 @@ export default {
         },
       });
     },
-    showAddDrawer() {
+    showAddDrawer(id) {
       this.ifAddDrawerVisible = true;
+      this.passPlantID = id;
     },
     onAddDrawerClose(ifVisible){
       this.ifAddDrawerVisible=ifVisible;
+    },
+    exportData(){
+      window.open(plantListExpURL);
+    },
+    toPlantDetail(plantId){
+      // this.$store.commit("setPlantId",plantId);
+      localStorage.setItem("plantId", plantId);
+      this.$router.push("/platform/plantDetails");
     }
   },
   mounted() {

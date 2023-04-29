@@ -1,32 +1,15 @@
 import axios from "axios";
+import {request} from "./request"
 
-axios.defaults.baseURL = 'http://localhost:8082'
-export const getAction = (url, params) => {
-    return axios({
-        url: url,
-        method: 'get',
-        params
-    })
+export const getAction = (url,params) => {
+    return request.get(url, params)
 }
-
 export const postAction = (url, data) => {
-    return axios({
-        url: url,
-        method: 'post',
-        data
-    })
+    return request.post(url, data)
 }
 export const putAction = (url, data) => {
-    return axios({
-        url: url,
-        method: 'put',
-        data
-    })
+    return request.put(url, data)
 }
 export const deleteAction = (url, params) => {
-    return axios({
-        url: url,
-        method: 'delete',
-        params
-    })
+    return request.delete(url, params)
 }

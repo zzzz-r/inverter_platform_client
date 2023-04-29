@@ -4,20 +4,20 @@
     <div class="logo" />
     <!--      用户头像-->
     <div class="user-avatar">
-      <a-avatar icon="user"/>
+      <a-avatar icon="user" v-if="!user.avatar"/>
       <a-dropdown :trigger="['click']">
         <a class="ant-dropdown-link" @click="e => e.preventDefault()" style="color: white;margin-left: 5px">
-          username <a-icon type="down" />
+          <span>{{ user.userName }} </span><a-icon type="down" />
         </a>
         <a-menu slot="overlay">
           <a-menu-item key="0">
-            <a href="http://www.alipay.com/">个人中心</a>
+            <router-link :to="{ path: '/platform/user'}">个人中心</router-link>
           </a-menu-item>
           <a-menu-item key="1">
             <a href="http://www.taobao.com/">联系我们</a>
           </a-menu-item>
           <a-menu-divider />
-          <a-menu-item key="3">
+          <a-menu-item key="3" @click="logout">
             退出登录
           </a-menu-item>
         </a-menu>
@@ -33,13 +33,13 @@
     >
 <!--      :selectedKeys="selectedNavyKey"-->
       <a-menu-item key="1" class="top-nav">
-        <router-link to="/">首页</router-link>
+        <router-link to="/platform/home">首页</router-link>
       </a-menu-item>
       <a-menu-item key="2" class="top-nav">
-        <router-link to="/plant">我的电站</router-link>
+        <router-link to="/platform/plant">我的电站</router-link>
       </a-menu-item>
       <a-menu-item key="3" class="top-nav">
-        <router-link to="/map">报警查询</router-link>
+        <router-link to="/platform/alarm">报警查询</router-link>
       </a-menu-item>
       <a-menu-item key="4" class="top-nav">
         权限管理
@@ -50,22 +50,35 @@
 </template>
 
 <script>
+import router from "@/router";
+
 export default {
   name: "Header",
   data() {
     return {
+      user: localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : {}
     };
   },
   props:{
     selectedNavyKey: ['1'],
+  },
+  methods:{
+    logout(){
+      this.$router.push("/login")
+      localStorage.removeItem("user")
+      this.$message.success("退出成功")
+    }
+  },
+  created() {
+    // console.log(router.currentRoute);
   }
 };
 </script>
 
 <style scoped>
-.header{
-  height: ;
-}
+/*.header{*/
+/*  height: ;*/
+/*}*/
 .logo {
   width: 120px;
   height: 31px;

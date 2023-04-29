@@ -1,19 +1,14 @@
 <template>
   <div id="app">
     <a-layout style="height: 100vh;">
-      <Header/>
       <router-view/>
     </a-layout>
   </div>
 </template>
 
 <script>
-import Header from "@/components/Header.vue";
 export default {
   name: 'App',
-  components: {
-    Header
-  }
 }
 </script>
 
