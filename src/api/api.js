@@ -1,6 +1,6 @@
 import {deleteAction, getAction, postAction, putAction} from "@/api/manage";
 
-export const addPlant = (param) => postAction("/plant/add", param)
+export const addOrEditPlant = (param) => postAction("/plant/addOrEdit", param)
 export const listPlant = (param) => getAction("/plant/list", param)
 export const detailPlant = (id) => getAction("/plant/detail/info/"+id, null)
 export const detailPlantList = (id) => getAction("/plant/detail/plantList/"+id, null)
@@ -17,3 +17,12 @@ export const getMiDayPowerInfo = (miId) => getAction("/mi/dayInfo/"+miId, null)
 export const listAlarmMi = () => getAction("/mi/alarm/", null)
 export const listAlarmDtu = () => getAction("/dtu/alarm/", null)
 export const listDtu = (plantId) => getAction("/dtu/list/"+plantId, null)
+export const listInstitute = () => getAction("/institute/list", null)
+export const listInstituteUser = (id, if_institute) => getAction(`/institute/listUser/${id}?if_institute=${if_institute}`, null)
+export const saveInstitute = (param) => postAction("/institute/save", param)
+export const deleteInstitute = (id) => deleteAction("/institute/delete/"+id, null)
+export const resetPassword = (id) => putAction("/user/resetPwd/"+id, null)
+export const deleteUser = (id) => deleteAction("/user/delete/"+id, null)
+export const adminUserEdit = (param) => putAction("/user/admin/edit", param)
+export const adminUserRegister = (param) => postAction("/user/admin/register", param)
+

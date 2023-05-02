@@ -36,3 +36,8 @@
 .full-green{
     height: 100vh;
 }
+.body-box{
+    padding: 0 20px 20px;
+    marginTop: 10px;
+    overflow: scroll;
+}

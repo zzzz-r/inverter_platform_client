@@ -105,7 +105,7 @@
           </a-col>
           <a-col span="12">
             <a-form-item label="用户类型" style="text-align: left" :label-col="{ span: 6 }" :wrapper-col="{ span: 14 }">
-              <a-radio-group v-decorator="['type',{ rules: [{ required: true, }, ], }, ]">
+              <a-radio-group :disabled="true" v-decorator="['type',{ rules: [{ required: true, }, ], }, ]">
                 <a-radio :value="0">
                   普通用户
                 </a-radio>
@@ -120,10 +120,10 @@
         <a-row>
           <a-col span="12"/>
           <a-col span="12">
-            <a-form-item label="机构名称" v-show="form.getFieldValue('type')===1" :label-col="{ span: 5 }" :wrapper-col="{ span: 19 }">
+            <a-form-item label="所属机构" :label-col="{ span: 5 }" :wrapper-col="{ span: 19 }">
             <a-input
                 class="input-item"
-                placeholder="请输入机构名称"
+                :disabled="true"
                 v-decorator="['institute',{ rules: [{ required: false}, ], }, ]"
             />
           </a-form-item>

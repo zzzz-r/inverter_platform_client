@@ -28,8 +28,7 @@
         theme="dark"
         mode="horizontal"
         :default-selected-keys="['1']"
-
-        :style="{ lineHeight: '64px', width: '60%'}"
+        :style="{ lineHeight: '64px', width: '60%', textAlign: 'left'}"
     >
 <!--      :selectedKeys="selectedNavyKey"-->
       <a-menu-item key="1" class="top-nav">
@@ -38,13 +37,22 @@
       <a-menu-item key="2" class="top-nav">
         <router-link to="/platform/plant">我的电站</router-link>
       </a-menu-item>
-      <a-menu-item key="3" class="top-nav">
+      <a-menu-item key="3" class="top-nav" v-if="user.type === 1">
         <router-link to="/platform/alarm">报警查询</router-link>
       </a-menu-item>
-      <a-menu-item key="4" class="top-nav">
-        权限管理
-      </a-menu-item>
-    </a-menu>
+      <a-sub-menu key="4" class="top-nav" v-if="user.type === 1">
+        <span slot="title">权限管理</span>
+          <a-menu-item key="4-1">
+            <router-link to="/platform/institute">机构管理</router-link>
+          </a-menu-item>
+          <a-menu-item key="4-2">
+            <router-link to="/platform/instituteUser">机构用户管理</router-link>
+          </a-menu-item>
+          <a-menu-item key="4-3">
+            <router-link to="/platform/customer">业主管理</router-link>
+          </a-menu-item>
+      </a-sub-menu>
+          </a-menu>
 
   </a-layout-header>
 </template>
@@ -76,9 +84,6 @@ export default {
 </script>
 
 <style scoped>
-/*.header{*/
-/*  height: ;*/
-/*}*/
 .logo {
   width: 120px;
   height: 31px;
@@ -87,14 +92,13 @@ export default {
   float: left;
 }
 .top-nav{
-  width: 20%;
+  width: 130px;
   font-weight: bold;
   font-size: 15px;
   text-align: center;
 }
 .user-avatar {
   height: 31px;
-  /*background: green;*/
   margin: 16px 0;
   float: right;
   display: flex;

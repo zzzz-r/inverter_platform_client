@@ -1,3 +1,5 @@
+<!--已不再使用-->
+
 <template>
   <div class="container">
     <div class="login-wrapper">
@@ -28,7 +30,7 @@
         <button class="login-btn">登录</button>
       </a-form>
       <div class="msg">
-        没有账户? 现在<router-link to="/register">注册</router-link>
+        没有账户? 查看<a-button type="link" @click="info">如何获取</a-button>
       </div>
     </div>
   </div>
@@ -59,6 +61,18 @@ export default {
             }
           })
         }
+      });
+    },
+    info() {
+      const h = this.$createElement;
+      this.$info({
+        title: '获取账号',
+        content: h('div', {}, [
+          h('p', '- 如果您是业主用户，请联系您的安装人员创建帐户；'),
+          h('p', '- 如果您是新安装商，并且之前没有安装帐户，请联系您的经销商为您创建帐户；'),
+          h('p', '- 如果您是新经销商，请告诉联系我们给出您的销售和登录 ID，我们将为您创建帐户'),
+        ]),
+        onOk() {},
       });
     },
   },

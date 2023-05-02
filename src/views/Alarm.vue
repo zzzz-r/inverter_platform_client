@@ -1,6 +1,6 @@
 <template>
-  <div style="padding: 0 20px 20px; marginTop: 10px">
-    <a-tabs default-active-key="2" @change="onTabChange" style="text-align: left;background-color: #ffffff">
+  <div class="body-box">
+    <a-tabs default-active-key="2" style="text-align: left;background-color: #ffffff;margin-top: 15px">
       <a-tab-pane key="1" tab="采集器" style="overflow: scroll">
         <DtuAlarmList/>
       </a-tab-pane>

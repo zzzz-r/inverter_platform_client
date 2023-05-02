@@ -22,7 +22,7 @@
               </a-form-model-item>
 
               <a-form-model-item label="电站位置">
-                <div id="container"></div>
+                <div id="container" v-if="ifVisible"></div>
               </a-form-model-item>
 
               <div style="display: flex;justify-content: center">
@@ -152,26 +152,76 @@
 
                 <a-col :span="12">
                   <a-form-model-item label="日还款(元)">
-                    <a-input v-model="editableItem.daily_repay"/>
+                    <a-input v-model="editableItem.dailyRepay"/>
                   </a-form-model-item>
                 </a-col>
               </a-row>
             </template>
             <template v-else-if="current === 3">
               <!-- 第四步要渲染的组件 -->
-              <a-row>
-                <a-col :span="12">
-                  <a-form-model-item label="业主姓名">
-                    <a-input v-model="editableItem.ownerName"/>
-                  </a-form-model-item>
+              <a-row :gutter="16" style="text-align: left; margin-top: 15px;">
+                <a-col :span="5">
+                  <a-card class="card" title="选择组织机构" >
+                    <a-tree
+                        :tree-data="institutesTree"
+                        :show-line="true"
+                        rowKey="id"
+                        :defaultExpandAll="true"
+                        @select="onInstituteSelect"
+                        v-if="institutesTree.length>0"
+                    >
+                    </a-tree>
+                  </a-card>
                 </a-col>
+
                 <a-col :span="12">
-                  <a-form-model-item label="业主联系电话">
-                    <a-input v-model="editableItem.ownerTel"/>
-                  </a-form-model-item>
+                  <a-card class="card" title="选择业主">
+                    <a-table
+                        :columns="userColumns"
+                        :data-source="users"
+                        :locale="{ emptyText: '暂无数据' }"
+                        size="middle"
+                        :rowKey="(record) => record.id"
+                        :bordered="true"
+                    >
+
+                      <template slot="institute" slot-scope="text,record">
+                        {{institutes.find(item => item.id === record.instituteId).name}}
+                      </template>
+
+                      <template slot="operation" slot-scope="text,record">
+                        <a-tooltip>
+                          <template slot="title">
+                            添加
+                          </template>
+                          <a-button type="link" @click="addOwner(record)"><a-icon type="user-add" /></a-button>
+                        </a-tooltip>
+                      </template>
+                    </a-table>
+                  </a-card>
+                </a-col>
+
+                <a-col :span="7">
+                  <a-card class="card" title="已有业主">
+                    <a-table
+                        :columns="selectedUserColumns"
+                        :data-source="selectedUsers"
+                        :locale="{ emptyText: '暂无业主' }"
+                        size="middle"
+                        :rowKey="(record) => record.id"
+                    >
+                      <template slot="operation" slot-scope="text,record">
+                        <a-tooltip>
+                          <template slot="title">
+                            移除{{record}}
+                          </template>
+                          <a-button type="link" @click="removeOwner(record)"><a-icon type="user-delete" /></a-button>
+                        </a-tooltip>
+                      </template>
+                    </a-table>
+                  </a-card>
                 </a-col>
               </a-row>
-
             </template>
           </a-form-model>
         </div>
@@ -199,7 +249,7 @@
 <script>
 import AMapLoader from '@amap/amap-jsapi-loader';
 import {uploadURL} from "@/config/config";
-import {addPlant, detailPlant, editPlant} from "@/api/api";
+import {addOrEditPlant, detailPlant, listInstitute, listInstituteUser} from "@/api/api";
 window._AMapSecurityConfig = {
   securityJsCode: 'f06653a86b643465e607ae67ffddc067'
 }
@@ -243,9 +293,9 @@ export default {
         elecBenefit: null,
         subsidyBenefit: null,
         cost: null,
-        daily_repay: null,
-        ownerName: null,
-        ownerTel: null,
+        dailyRepay: null,
+        instituteId: null,
+        userId: [],
         cover:[],
       },
       rules: {
@@ -262,6 +312,56 @@ export default {
       cities: [], // 保存当前省份下的所有城市数据
       counties: [], // 保存当前城市下的所有区县数据
       marker: null,
+      // 下面是选择机构相关
+      institutes: [],
+      instituteId: null,
+      institutesTree: [],
+      selectedInstitute: null,
+      users: [],
+      userColumns: [
+        {
+          title: '登陆账号',
+          dataIndex: 'id',
+          key: 'id',
+        },
+        {
+          title: '用户名',
+          dataIndex: 'userName',
+          key: 'userName',
+        },
+        {
+          title: '所属机构',
+          dataIndex: 'institute',
+          key: 'institute',
+          scopedSlots: { customRender: 'institute' },
+        },
+        {
+          title: '操作',
+          dataIndex: 'operation',
+          key: 'operation',
+          fixed: 'right',
+          scopedSlots: { customRender: 'operation' },
+        },
+      ],
+      selectedUserColumns:[
+        {
+          title: '登陆账号',
+          dataIndex: 'id',
+          key: 'id',
+        },{
+          title: '用户名',
+          dataIndex: 'userName',
+          key: 'userName',
+          scopedSlots: { customRender: 'userName' },
+        },{
+          title: '操作',
+          dataIndex: 'operation',
+          key: 'operation',
+          fixed: 'right',
+          scopedSlots: { customRender: 'operation' },
+        },
+      ],
+      selectedUsers: [],
     };
   },
   props:{
@@ -382,7 +482,6 @@ export default {
       });
     },
     onProvinceChange() {
-      console.log("onProvinceChange")
       this.cities = [];
       this.counties = [];
       const districtSearch = new AMap.DistrictSearch({
@@ -399,7 +498,6 @@ export default {
       });
     },
     onCityChange() {
-      console.log("onCityChange")
       this.counties = [];
       // 根据选中的省份和城市，获取对应的区县数据
       this.counties = [];
@@ -417,7 +515,6 @@ export default {
       });
     },
     onCountyChange() {
-      console.log("onCountyChange")
       // 根据选中的省份、城市和区县，获取对应的经纬度和详细地址信息
       const address = `${this.editableItem.province}${this.editableItem.city}${this.editableItem.county}`;
       const geocoder = new AMap.Geocoder({
@@ -468,33 +565,112 @@ export default {
         if (valid) {
           let param = JSON.parse(JSON.stringify(this.editableItem));
           param.cover= this.editableItem.cover.length>0? this.coverUrlWithoutPrefix(this.editableItem.cover[0].url) : null;
-          if(this.plantId){ //修改
-            editPlant(this.plantId, param).then(res=>{
-              console.log(res)
-              if(res.code === 0){
-                this.$message.success(res.msg)
-              } else{
-                this.$message.error(res.msg)
-              }
-            })
-            this.onAddDrawerClose(true);
-          }else{ //添加
-            addPlant(param).then(res=>{
-              console.log(res)
-              if(res.code === 0){
-                this.$message.success(res.msg)
-                this.onAddDrawerClose(true);
-              } else{
-                this.$message.error(res.msg)
-                this.onAddDrawerClose(false);
-              }
-            })
-          }
+          param.instituteId = this.selectedInstitute;
+          param.userId = this.selectedUsers.map(item => {return item.id});
+          console.log(param);
+          addOrEditPlant(param).then(res=>{
+            console.log(res)
+            if(res.code === 0){
+              this.$message.success(res.msg)
+              this.onAddDrawerClose(true);
+            } else{
+              this.$message.error(res.msg)
+              this.onAddDrawerClose(false);
+            }
+          })
+          // if(this.plantId){ //修改
+          //   editPlant(this.plantId, param).then(res=>{
+          //     console.log(res)
+          //     if(res.code === 0){
+          //       this.$message.success(res.msg)
+          //     } else{
+          //       this.$message.error(res.msg)
+          //     }
+          //   })
+          //   this.onAddDrawerClose(true);
+          // }else{ //添加
+          //   console.log(param);
+          //   addPlant(param).then(res=>{
+          //     console.log(res)
+          //     if(res.code === 0){
+          //       this.$message.success(res.msg)
+          //       this.onAddDrawerClose(true);
+          //     } else{
+          //       this.$message.error(res.msg)
+          //       this.onAddDrawerClose(false);
+          //     }
+          //   })
+          // }
         } else {
           return false;
         }
       });
-    }
+    },
+    // 下面是选择机构相关
+    onInstituteSelect(selectedKeys) {
+      if(this.selectedInstitute !== selectedKeys[0]){
+        this.selectedUsers = [];
+        this.selectedInstitute = selectedKeys[0];
+        this.fetchUserData(this.selectedInstitute);
+      }
+    },
+    findChildren(id){
+      return this.institutes.filter((item) => item.pid === id);
+    },
+    buildTree(id){
+      const node = { key: id,};
+      const currentNode = this.institutes.find(item => item.id === id);
+      node.name = currentNode.name;
+      node.type = currentNode.type;
+      let pNode = this.institutes.find(item => item.id === currentNode.pid);
+      node.pid = pNode? pNode.name : null;
+      node.contactName = currentNode.contactName;
+      node.value = currentNode.id;
+      node.title = currentNode.name;
+      const children = this.findChildren(id);
+      if (children.length > 0) {
+        node.children = children.map((child) => this.buildTree(child.id));
+      }
+      return node;
+    },
+    fetchInstituteData(){
+      listInstitute().then(res => {
+        this.institutes = res.data;
+        this.institutesTree = this.institutes
+            .filter((item) => item.id === this.instituteId)
+            .map((root) => this.buildTree(root.id));
+        if(!this.plantId){ // 新增时当前机构为根机构
+          this.selectedInstitute = this.institutesTree[0].key;
+        }
+        this.fetchUserData(this.selectedInstitute);
+      }).catch(error => {
+        console.error(error)
+      })
+    },
+    fetchUserData(id){
+      listInstituteUser(id, false).then(res => {
+        this.users = res.data;
+        this.users = this.users.filter(item=> item.instituteId === this.selectedInstitute); //不显示下级
+        if(this.selectedUsers.length !== 0){ // 编辑 已获得userId
+          this.selectedUsers = this.selectedUsers.map(item => {return {id: item, userName:this.getUsernameById(item)}})
+        }
+      }).catch(error => {
+        console.error(error)
+      })
+    },
+    getUsernameById(id){
+      let user = this.users.find(item => item.id === id);
+      return user? user.userName: null;
+    },
+    addOwner(record){
+      let existingUser = this.selectedUsers.find(u => u.id === record.id);
+      if (!existingUser) {
+        this.selectedUsers.push({id:record.id,userName:record.userName});
+      }
+    },
+    removeOwner(record){
+      this.selectedUsers = this.selectedUsers.filter(item=>item.id!==record.id);
+    },
   },
   mounted() {
     this.initAMap();
@@ -517,30 +693,27 @@ export default {
         this.initAMap();
       }
     })
-    this.$watch('plantId', (newVal, oldVal) => {
-      // 编辑
-      if(newVal != null){
-        detailPlant(this.plantId).then(res=>{
-          this.editableItem = JSON.parse(JSON.stringify(res.data));
-          this.editableItem.cover = []
-          this.editableItem.cover.push({uid:-1, url:this.coverUrlWithPrefix(res.data.cover)})
-          console.log(this.editableItem)
-        })
-      }
-    })
     this.$watch('ifVisible', (newVal, oldVal) => {
       // 打开表单
       if(newVal){
         this.initAMap();
-        if(this.plantId){
+        if(this.plantId){ // 编辑
+          this.instituteId = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")).instituteId : null
           detailPlant(this.plantId).then(res=>{
             this.editableItem = JSON.parse(JSON.stringify(res.data));
-            this.editableItem.cover = []
+            this.editableItem.cover = [];
+            this.selectedInstitute = res.data.instituteId;
+            this.selectedUsers = res.data.userId;
+            this.fetchInstituteData();
             if(res.data.cover)
               this.editableItem.cover.push({uid:-1, url:this.coverUrlWithPrefix(res.data.cover)})
             console.log(this.editableItem)
           })
+        }else{ //新增
+          this.fetchInstituteData();
         }
+        if(this.$refs.ruleForm)
+          this.$refs.ruleForm.clearValidate();
       }
     })
   }

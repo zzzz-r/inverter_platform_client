@@ -53,6 +53,18 @@ const routes = [
             path: 'alarm',
             name: 'Alarm',
             component: () => import("@/views/Alarm.vue"),
+        },{
+            path: 'institute',
+            name: 'Institute',
+            component: () => import("@/views/Institute.vue"),
+        },{
+            path: 'instituteUser',
+            name: 'InstituteUser',
+            component: () => import("@/views/InstituteUser.vue"),
+        },{
+            path: 'customer',
+            name: 'NormalUser',
+            component: () => import("@/views/NormalUser.vue"),
         }]
     },
     {

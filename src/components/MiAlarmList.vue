@@ -3,10 +3,11 @@
     <a-table
         :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange }"
         :columns="columns"
-        :data-source="ifFiltered ? filteredData : data"
+        :data-source="data"
         :locale="{ emptyText: '暂无数据' }"
         size="small"
         rowKey="id"
+        :bordered="true"
     >
 
       <template slot="alarmName" slot-scope="text,record">
@@ -20,6 +21,9 @@
           <a-tag color="#95de64" v-if="record.acVoltage === 1">交流电压异常</a-tag>
           <a-tag color="#b37feb" v-if="record.gridVoltage === 1">电网电压异常</a-tag>
         </span>
+      </template>
+      <template slot="updateTime" slot-scope="text,record" >
+        <span>{{ new Date(record.updateTime).toLocaleString() }}</span>
       </template>
 
       <template slot="operation" slot-scope="text,record" >
@@ -42,8 +46,7 @@ const columns = [
   },
   {
     title: '所属电站',
-    dataIndex: 'plantId',
-    sorter: (a, b) => a.id - b.id,
+    dataIndex: 'plantName',
   },
   {
     title: '报警名称',

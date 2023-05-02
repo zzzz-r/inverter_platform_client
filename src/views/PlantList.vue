@@ -1,5 +1,5 @@
 <template>
-  <a-layout style="padding: 0 20px 20px; marginTop: 10px">
+  <a-layout class="body-box">
     <a-layout-content
         :style="{ background: '#fff', padding: '10px', overflow: 'auto'}"
     >
@@ -61,16 +61,20 @@
           {{ text ? text + "kW" : "" }}
         </template>
 
+        <template slot="owner" slot-scope="text">
+          <span v-for="(owner, index) in text">{{ owner }}<br v-if="index !== text.length - 1"></span>
+        </template>
+
         <template slot="pwRate" slot-scope="text,record">
           {{ record.power && record.capacity ? (record.power/record.capacity*100).toFixed(2) + '%' : ""}}
         </template>
 
         <template slot="dayGen" slot-scope="text">
-          {{ text ? text + "kWh" : "" }}
+          {{ text!==null ? text + "kWh" : "" }}
         </template>
 
         <template slot="genHour" slot-scope="text,record">
-          {{ record.dayGen && record.capacity ? (record.dayGen/record.capacity).toFixed(2) + 'h' : ""}}
+          {{ record.dayGen!==null && record.capacity ? (record.dayGen/record.capacity).toFixed(2) + 'h' : ""}}
         </template>
 
         <template slot="operation" slot-scope="text">
@@ -170,7 +174,16 @@ const columns = [
       }
     ],
     onFilter: (value, record) => record.alarm === value,
-
+  },
+  {
+    title: '所属机构',
+    dataIndex: 'institute',
+    scopedSlots: { customRender: 'institute' },
+  },
+  {
+    title: '业主',
+    dataIndex: 'owner',
+    scopedSlots: { customRender: 'owner' },
   },
   {
     title: '装机容量',
@@ -249,7 +262,8 @@ export default {
       this.loading = true;
       listPlant(null)
           .then(res => {
-            this.data = res.data.records
+            this.data = res.data
+            console.log(res.data)
             this.loading=false
           })
           .catch(error => {
@@ -313,7 +327,7 @@ export default {
     showDeleteConfirm(id) {
       this.$confirm({
         title: '删除电站',
-        content: '确定要删除电站吗？这将导致电站所有历史数据丢失，请谨慎操作！',
+        content: '确定要删除电站吗？这将导致电站所有数据丢失，请谨慎操作！',
         okText: '确定',
         okType: 'danger',
         cancelText: '取消',
@@ -334,6 +348,7 @@ export default {
     },
     onAddDrawerClose(ifVisible){
       this.ifAddDrawerVisible=ifVisible;
+      this.fetchData();
     },
     exportData(){
       window.open(plantListExpURL);
