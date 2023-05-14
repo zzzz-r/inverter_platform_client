@@ -8,7 +8,11 @@
         size="small"
         rowKey="id"
         :bordered="true"
+        :loading="loading"
     >
+      <template slot="plantName" slot-scope="text" >
+        {{text}}
+      </template>
 
       <template slot="alarmName" slot-scope="text,record">
         <a-tag color="#ff4d4f" v-if="record.state === 1">离线</a-tag>
@@ -22,12 +26,13 @@
           <a-tag color="#b37feb" v-if="record.gridVoltage === 1">电网电压异常</a-tag>
         </span>
       </template>
+
       <template slot="updateTime" slot-scope="text,record" >
         <span>{{ new Date(record.updateTime).toLocaleString() }}</span>
       </template>
 
       <template slot="operation" slot-scope="text,record" >
-        <a-button type="link">提交工单</a-button>|
+<!--        <a-button type="link">提交工单</a-button>|-->
         <a-button type="link" @click="toMiDetails(record)">查看详情</a-button>
       </template>
 
@@ -47,6 +52,8 @@ const columns = [
   {
     title: '所属电站',
     dataIndex: 'plantName',
+    scopedSlots: {customRender: 'plantName'},
+    onFilter: (value, record) => { return record.plantName.indexOf(value) === 0;},
   },
   {
     title: '报警名称',
@@ -130,6 +137,7 @@ export default {
       columns,
       selectedRowKeys: [], // Check here to configure the default column
       loading: false,
+      plantsFilter: [],
     };
   },
   computed: {
@@ -141,8 +149,19 @@ export default {
     fetchData() {
       this.loading = true;
       listAlarmMi().then( res => {
-        console.log(res.data)
+        // console.log(res.data)
         this.data = res.data;
+
+        // 建立电站筛选列
+        let plants = Array.from(new Set(this.data.map(item => item.plantName)))
+        this.plantsFilter = plants.map(plant => ({ text: plant, value: plant }))
+        // 将筛选项添加到对应的列
+        this.columns.forEach(column => {
+          if (column.dataIndex === 'plantName') {
+            column.filters = this.plantsFilter;
+          }
+        })
+
         this.loading=false
       }).catch(error => {
         console.error(error)

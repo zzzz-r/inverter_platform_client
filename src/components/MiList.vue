@@ -7,10 +7,10 @@
         <a-button @click="reSetFilter">重置</a-button>
       </div>
       <div>
-        <a-button type="primary" class="mr-5">
+        <a-button type="primary" class="mr-5" @click="showAddMi">
           添加设备
         </a-button>
-        <a-button type="primary" :disabled="!hasSelected" style="margin-right: 20px">
+        <a-button type="primary" :disabled="!hasSelected" style="margin-right: 20px" @click="showDeleteConfirm(null)">
           批量删除
         </a-button>
       </div>
@@ -23,6 +23,7 @@
         :scroll="{x: 1200}"
         size="small"
         rowKey="id"
+        :loading="loading"
     >
       <!--      自定义某列样式，同时在columns中设置scopedSlots-->
       <template slot="state" slot-scope="text">
@@ -39,20 +40,51 @@
       </template>
 
       <template slot="dayGen" slot-scope="text">
-        {{ text ? text + "kWh" : "" }}
+        {{ text!=null ? text + "kWh" : "" }}
+      </template>
+
+      <template slot="updateTime" slot-scope="text">
+        {{ text? new Date(text).toLocaleString():null }}
       </template>
 
       <template slot="operation" slot-scope="text,record" >
-        <a-button type="link">解绑</a-button>|
+        <a-button type="link" @click="showDeleteConfirm(record.id)">解绑</a-button>|
         <a-button type="link" @click="toMiDetails(record)">查看</a-button>
       </template>
 
     </a-table>
+
+    <a-modal
+        title="新增微型逆变器"
+        :visible="ifAddVisible"
+        :confirm-loading="confirmLoading"
+        @ok="handleOkAdd"
+        @cancel="handleCancelAdd"
+    >
+      <a-form-model :model="param" :label-col="{ span: 7 }" :wrapper-col="{ span: 16 }" :rules="rules" ref="addForm">
+        <a-form-model-item label="微型逆变器编号" prop="id">
+          <a-input v-model="param.id"/>
+        </a-form-model-item>
+
+        <a-form-model-item label="连接的DTU编号" prop="dtuId">
+          <a-select v-model="param.dtuId">
+            <a-select-option v-for="dtu in this.dtuData" :value="dtu.id">
+              {{ dtu.id }}
+            </a-select-option>
+          </a-select>
+        </a-form-model-item>
+
+        <a-form-model-item label="组件容量（kWp）" prop="capacity">
+          <a-input v-model="param.capacity"></a-input>
+        </a-form-model-item>
+      </a-form-model>
+    </a-modal>
   </div>
 </template>
 
 <script>
-import {listMi} from "@/api/api";
+import {addMi, deleteMi, listDtu, listMi} from "@/api/api";
+import {EventBus} from "@/main";
 
 const columns = [
   {
@@ -121,19 +153,32 @@ const columns = [
 
 export default {
   name: "MiList",
-  data() {
-    return {
-      data: [],
-      columns,
-      plantId: null,
-      selectedRowKeys: [], // Check here to configure the default column
-      loading: false,
-      miIdSearchText: "",
-      dtuIdSearchText: "",
-      filteredData: [],
-      ifFiltered: false,
-    };
-  },
+    data() {
+      return {
+        data: [],
+        columns,
+        plantId: null,
+        selectedRowKeys: [], // Check here to configure the default column
+        loading: false,
+        miIdSearchText: "",
+        dtuIdSearchText: "",
+        filteredData: [],
+        ifFiltered: false,
+        ifAddVisible: false,
+        confirmLoading: false,
+        param:{
+          id: null,
+          dtuId: null,
+          capacity: null,
+        },
+        rules: {
+          id: [{ required: true, message: '请输入微型逆变器设备ID', trigger: 'blur' }],
+          dtuId: [{ required: true, message: '请输入连接的DTU编号', trigger: 'change' }],
+          capacity: [{ required: true, message: '请输入组件容量', trigger: 'blur' }],
+        },
+        dtuData: null,
+      };
+    },
   computed: {
     hasSelected() {
       return this.selectedRowKeys.length > 0;
@@ -145,13 +190,19 @@ export default {
       listMi(this.plantId).then( res => {
         // console.log(res.data)
         this.data = res.data;
-        this.loading=false
+        this.loading=false;
+      }).catch(error => {
+        console.error(error)
+      })
+    },
+    fetchDtuData() {
+      listDtu(this.plantId).then( res => {
+        this.dtuData = res.data;
       }).catch(error => {
         console.error(error)
       })
     },
     onSelectChange(selectedRowKeys) {
-      console.log('selectedRowKeys changed: ', selectedRowKeys);
       this.selectedRowKeys = selectedRowKeys;
     },
     onSearch() {
@@ -180,11 +231,78 @@ export default {
       // this.$store.commit("setMiListInfo",record);
       localStorage.setItem("miId", record.id);
       this.$router.push("/platform/plantDetails/mi");
+    },
+    showAddMi(){
+      this.ifAddVisible = true;
+      if(this.dtuData === null)
+        this.fetchDtuData();
+    },
+    handleOkAdd(){
+      this.$refs.addForm.validate(valid => {
+        if (valid) {
+          this.confirmLoading = true;
+          addMi(this.param).then(res => {
+            if(res.code === 0){
+              this.$message.success("添加成功");
+              this.fetchData();
+            }else
+              this.$message.error("添加失败");
+            this.$refs.addForm.resetFields();
+            this.ifAddVisible = false;
+            this.confirmLoading = false;
+          }).catch(error => {
+            console.error(error)
+          })
+        }
+      })
+    },
+    handleCancelAdd(){
+      this.ifAddVisible = false;
+      this.$refs.addForm.resetFields();
+    },
+    showDeleteConfirm(id) {
+      this.$confirm({
+        title: '删除微型逆变器',
+        content: '确定要删除选中微型逆变器吗？',
+        okText: '确定',
+        okType: 'danger',
+        cancelText: '取消',
+        onOk: () => { //使用箭头函数绑定外部函数的上下文，this将指向Vue实例
+          this.handleDelete(id);
+        },
+      });
+    },
+    handleDelete(id){
+      let deleteRequests;
+      if(!id){ // 批量删除
+        // 获取选中的行
+        const selectedRows = this.data.filter(row => this.selectedRowKeys.includes(row.id))
+        // 构建批量删除请求
+        deleteRequests = selectedRows.map(row => deleteMi(row.id))
+      }else{ // 单个删除
+        deleteRequests = [deleteMi(id)];
+      }
+      Promise.all(deleteRequests)
+          .then(() => {
+            // 所有请求都成功删除后，重新加载数据
+            this.fetchData()
+            this.selectedRowKeys = [] // 清空选中的行
+            this.$message.success('删除成功')
+          })
+          .catch(error => {
+            console.log(error)
+          })
+    },
+    handleDtuChange(){
+      if(this.dtuData !== null)
+        this.fetchDtuData();
+      this.fetchData();
     }
   },
   created() {
     this.plantId = localStorage.getItem("plantId") ? JSON.parse(localStorage.getItem("plantId")) : null
     this.fetchData();
+    EventBus.$on('dtuChange', this.handleDtuChange)
   }
 };
 </script>

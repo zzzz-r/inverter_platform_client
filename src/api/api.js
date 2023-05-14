@@ -1,4 +1,5 @@
 import {deleteAction, getAction, postAction, putAction} from "@/api/manage";
+import {serverIp} from "@/config/config";
 
 export const addOrEditPlant = (param) => postAction("/plant/addOrEdit", param)
 export const listPlant = (param) => getAction("/plant/list", param)
@@ -15,8 +16,12 @@ export const listMi = (plantId) => getAction("/mi/list/"+plantId, null)
 export const getMiAllInfo = (miId) => getAction("/mi/detail/"+miId, null)
 export const getMiDayPowerInfo = (miId) => getAction("/mi/dayInfo/"+miId, null)
 export const listAlarmMi = () => getAction("/mi/alarm/", null)
+export const addMi = (param) => postAction("/mi/add", param)
+export const deleteMi = (id) => deleteAction("/mi/delete/"+id, null)
 export const listAlarmDtu = () => getAction("/dtu/alarm/", null)
 export const listDtu = (plantId) => getAction("/dtu/list/"+plantId, null)
+export const addDtu = (param) => postAction("/dtu/add", param)
+export const deleteDtu = (id) => deleteAction("/dtu/delete/"+id, null)
 export const listInstitute = () => getAction("/institute/list", null)
 export const listInstituteUser = (id, if_institute) => getAction(`/institute/listUser/${id}?if_institute=${if_institute}`, null)
 export const saveInstitute = (param) => postAction("/institute/save", param)
@@ -25,4 +30,8 @@ export const resetPassword = (id) => putAction("/user/resetPwd/"+id, null)
 export const deleteUser = (id) => deleteAction("/user/delete/"+id, null)
 export const adminUserEdit = (param) => putAction("/user/admin/edit", param)
 export const adminUserRegister = (param) => postAction("/user/admin/register", param)
+export const getCount = () => getAction("/plant/count", null)
+export const getGenReport = (plantId, startDate, endDate) => getAction(`/plant/genReport/${plantId}?startDate=${startDate}&endDate=${endDate}`, null)
+export const exportGenReport = (plantId, startDate, endDate) => window.open("http://"+serverIp+`/plant/export/genReport/${plantId}?startDate=${startDate}&endDate=${endDate}`);
+
 

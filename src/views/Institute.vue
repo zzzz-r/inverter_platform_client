@@ -13,7 +13,7 @@
           <a-icon type="plus-circle" />新增机构
         </a-button>
         <a-drawer
-            title="新增组织机构"
+            :title="ifAdd? '新增组织机构':'编辑组织机构'"
             placement="right"
             :closable="false"
             :visible="ifAddVisible"
@@ -104,6 +104,7 @@
         v-if="data.length>0"
         :bordered="true"
         size="middle"
+        :loading="loading"
     >
       <template slot="operation" slot-scope="text,record">
         <a-tooltip>
@@ -182,6 +183,7 @@ export default {
   name:"Institute",
   data() {
     return {
+      loading: true,
       data: [],
       instituteId: null,
       searchText: "",
@@ -243,12 +245,14 @@ export default {
       return node;
     },
     fetchData(){
+      this.loading = true;
       listInstitute().then(res => {
         this.institutes = res.data;
-        console.log(this.institutes);
+        // console.log(this.institutes);
         this.data = this.institutes
             .filter((item) => item.id === this.instituteId)
             .map((root) => this.buildTree(root.id));
+        this.loading = false;
       }).catch(error => {
         console.error(error)
       })
@@ -317,9 +321,11 @@ export default {
       let instituteInfo = this.institutes.find(item => item.id === id);
       this.editableItem.parent = [];
       let pid = instituteInfo.pid;
+      // 逆序向上插入寻找父机构，直至根节点
       while(pid !== null){
         this.editableItem.parent.unshift(pid);
-        pid = this.institutes.find(item => item.id === pid).pid;
+        let parentInstitute = this.institutes.find(item => item.id === pid);
+        pid = parentInstitute ? parentInstitute.pid : null;
       }
       this.editableItem.name = instituteInfo.name;
       this.editableItem.type = instituteInfo.type;
@@ -335,6 +341,7 @@ export default {
     },
     onTransferClose(){
       this.ifTransferVisible = false;
+      // console.log(this.transferItem.parent)
     },
     showTransferDrawer(id){
       this.ifTransferVisible = true;
@@ -349,8 +356,15 @@ export default {
       let pid = instituteInfo.pid;
       while(pid !== null){
         this.transferItem.curParent.unshift(pid);
-        pid = this.institutes.find(item => item.id === pid).pid;
+        let parentInstitute = this.institutes.find(item => item.id === pid);
+        if(parentInstitute){
+          pid = parentInstitute.pid;
+        }else{ // 根节点pid不在institutes中，需删除根节点pid
+          this.transferItem.curParent.shift();
+          break;
+        }
       }
+      // console.log(this.transferItem.curParent);
     },
     onSubmitTransfer(){
       this.$refs.transferForm.validate(valid => {
@@ -377,7 +391,6 @@ export default {
       }).catch(error => {
             console.error(error)
       })
-      console.log(id);
     },
     showDeleteConfirm(id){
       this.$confirm({

@@ -9,9 +9,14 @@
           <span>ID: {{miInfo?miInfo.id:null}}</span>&nbsp&nbsp&nbsp&nbsp
           <span>连接DTU: {{miInfo?miInfo.dtuId:null}}</span>&nbsp&nbsp&nbsp&nbsp
           <a-tag color="#87d068" v-if="miInfo.state === 0">在线</a-tag>
-          <a-tag color="#f50" v-else-if="miInfo.state !== 0">离线</a-tag>
+          <a-tag color="#f50" v-else>离线</a-tag>
+
+          <span v-if="miInfo.state === 0">
+            <a-tag color="#87d068" v-if="miInfo.ifAlarm === 0">正常</a-tag>
+            <a-tag color="#f50" v-else>报警</a-tag>
+          </span>
         </div>
-        <a-button type="danger" style="float: right">移除设备</a-button>
+        <a-button type="danger" style="float: right" @click="showDeleteConfirm">移除设备</a-button>
       </a-card>
     </a-row>
     <a-row :gutter="16" style="margin-bottom: 5px">
@@ -19,7 +24,7 @@
         <a-card>
           <a-row style="display: flex">
             <span style="font-size: 15px">实时发电信息</span>
-            <span style="margin-left: auto">数据更新于: {{miInfo?miInfo.updateTime:null}}</span>
+            <span style="margin-left: auto">数据更新于: {{miInfo.updateTime !== null ? new Date(miInfo.updateTime).toLocaleString():null}}</span>
           </a-row>
           <a-divider class="m-0"></a-divider>
           <a-row style="height: 200px">
@@ -43,7 +48,7 @@
           <a-row class="display-box" style="background-color: #EDFBFD ">
             <a-col :span="12">
               <div class="display-title">日发电量</div>
-              <span class="mid-text">{{ miInfo ? miInfo.state : null}}</span>&nbsp;kW
+              <span class="mid-text">{{ miInfo ? miInfo.dayGen : null}}</span>&nbsp;kW
             </a-col>
             <a-col :span="12">
               <div class="display-title">温度</div>
@@ -92,7 +97,7 @@
 </template>
 
 <script>
-import {getMiAllInfo, getMiDayPowerInfo} from "@/api/api";
+import {deleteMi, getMiAllInfo, getMiDayPowerInfo} from "@/api/api";
 import * as echarts from "echarts";
 import  'echarts-liquidfill'
 
@@ -213,20 +218,41 @@ export default {
     },
     goBack(){
       this.$router.push("/platform/plantDetails/devices")
-    }
+    },
+    showDeleteConfirm(id) {
+      this.$confirm({
+        title: '删除微型逆变器',
+        content: '确定要删除选中微型逆变器吗？',
+        okText: '确定',
+        okType: 'danger',
+        cancelText: '取消',
+        onOk: () => { //使用箭头函数绑定外部函数的上下文，this将指向Vue实例
+          this.handleDelete(id);
+        },
+      });
+    },
+    handleDelete(){
+      deleteMi(this.miId).then(() => {
+        this.goBack();
+        this.$message.success('删除成功');
+      }).catch(error => {
+        console.log(error)
+      })
+    },
   },
   mounted() {
     this.miId = localStorage.getItem("miId") ? JSON.parse(localStorage.getItem("miId")) : null
 
     getMiAllInfo(this.miId).then(res => {
       this.miInfo = res.data;
+      // console.log(res.data);
       this.initEchartsLiquidFill();
     }).catch(error => {
       console.error(error)
     })
 
     getMiDayPowerInfo(this.miId).then(res=> {
-      console.log(res.data);
+      // console.log(res.data);
       this.miDayPowerInfo = res.data;
       this.miDayPowerInfo.sort((a,b)=>{return new Date(a.updateTime) - new Date(b.updateTime)})
       this.powerData = this.miDayPowerInfo.map(item=>{

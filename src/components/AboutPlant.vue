@@ -1,54 +1,44 @@
 <template>
   <div>
-    <a-drawer
-        :title="plantId ? '编辑电站' : '添加电站'"
-        placement="top"
-        height="600"
-        :visible="ifVisible"
-        :body-style="{ paddingBottom: '80px' }"
-        @close="onAddDrawerClose(true)"
-    >
-      <div>
-        <a-steps :current="current">
-          <a-step v-for="item in steps" :key="item.title" :title="item.title" />
-        </a-steps>
-        <div class="steps-content">
-          <a-form-model ref="ruleForm" :rules="rules" :model="editableItem"
-                        :label-col="{ span: 5 }" :wrapper-col="{ span: 15 }" >
-            <template v-if="current === 0">
+    <div>
+      <a-form-model ref="ruleForm" :rules="rules" :model="editableItem"
+                    :label-col="{ span: 6 }" :wrapper-col="{ span: 15 }" >
+        <a-collapse :default-active-key="['1','2','3','4']" :bordered="false">
+          <a-collapse-panel key="1" header="基础信息" :style="customStyle">
+            <template>
               <!-- 第一步要渲染的组件 -->
               <a-form-model-item label="电站名称" prop="name">
                 <a-input v-model="editableItem.name"/>
               </a-form-model-item>
 
               <a-form-model-item label="电站位置">
-                <div id="container" v-if="ifVisible"></div>
+                <div id="container"></div>
               </a-form-model-item>
 
               <div style="display: flex;justify-content: center">
-                  <a-form-model-item label="省份" prop="province" >
-                    <a-select class="posSelect" v-model="editableItem.province" placeholder="请选择省份"
-                              @change="onProvinceChange">
-                      <a-select-option @click="handleClickProvince" v-for="(province, index) in provinces" :key="index" :value="province">{{ province }}</a-select-option>
-                    </a-select>
-                  </a-form-model-item>
-                  <a-form-model-item label="城市" prop="city" >
-                    <a-select class="posSelect" v-model="editableItem.city" placeholder="请选择城市"
-                              @change="onCityChange" :disabled="!(cities.length>0||editableItem.city)">
-                      <a-select-option @click="handleClickCity" v-for="(city, index) in cities" :key="index" :value="city">{{ city }}</a-select-option>
-                    </a-select>
-                  </a-form-model-item>
-                  <a-form-model-item label="区县" prop="county" >
-                    <a-select class="posSelect" v-model="editableItem.county" placeholder="请选择区县"
-                              @change="onCountyChange" :disabled="!(counties.length>0||editableItem.county)">
-                      <a-select-option v-for="(county, index) in counties" :key="index" :value="county">{{ county }}</a-select-option>
-                    </a-select>
-                  </a-form-model-item>
+                <a-form-model-item label="省份" prop="province" >
+                  <a-select class="posSelect" v-model="editableItem.province" placeholder="请选择省份"
+                            @change="onProvinceChange">
+                    <a-select-option @click="handleClickProvince" v-for="(province, index) in provinces" :key="index" :value="province">{{ province }}</a-select-option>
+                  </a-select>
+                </a-form-model-item>
+                <a-form-model-item label="城市" prop="city" >
+                  <a-select class="posSelect" v-model="editableItem.city" placeholder="请选择城市"
+                            @change="onCityChange" :disabled="!(cities.length>0||editableItem.city)">
+                    <a-select-option @click="handleClickCity" v-for="(city, index) in cities" :key="index" :value="city">{{ city }}</a-select-option>
+                  </a-select>
+                </a-form-model-item>
+                <a-form-model-item label="区县" prop="county" >
+                  <a-select class="posSelect" v-model="editableItem.county" placeholder="请选择区县"
+                            @change="onCountyChange" :disabled="!(counties.length>0||editableItem.county)">
+                    <a-select-option v-for="(county, index) in counties" :key="index" :value="county">{{ county }}</a-select-option>
+                  </a-select>
+                </a-form-model-item>
               </div>
 
               <a-form-model-item label="详细地址" prop="address">
-                  <a-input id="address" v-model="editableItem.address"/>
-                </a-form-model-item>
+                <a-input id="address" v-model="editableItem.address"/>
+              </a-form-model-item>
 
               <div style="display: flex;justify-content: center">
                 <a-form-model-item label="经度" prop="lng" style="width: 36%">
@@ -60,7 +50,7 @@
               </div>
 
               <a-form-model-item label="建站时间">
-                <a-input :disabled="true" :value="getDate()"/>
+                <a-input :disabled="true" :value="$moment(editableItem.buildDate).format('YYYY-MM-DD')"/>
               </a-form-model-item>
 
               <a-form-model-item label="封面">
@@ -76,58 +66,62 @@
                 </a-upload>
               </a-form-model-item>
             </template>
-            <template v-if="current === 1">
+          </a-collapse-panel>
+          <a-collapse-panel key="2" header="系统信息" :style="customStyle">
+            <template>
               <!-- 第二步要渲染的组件 -->
               <a-row>
                 <a-col :span="12">
                   <a-form-model-item label="电站类型">
-                <a-select v-model="editableItem.plantType">
-                  <a-select-option value="分布式户用">
-                    分布式户用
-                  </a-select-option>
-                  <a-select-option value="分布式商业">
-                    分布式商业
-                  </a-select-option>
-                  <a-select-option value="分布式工业">
-                    分布式工业
-                  </a-select-option>
-                  <a-select-option value="地面电站">
-                    地面电站
-                  </a-select-option>
-                </a-select>
-              </a-form-model-item>
+                    <a-select v-model="editableItem.plantType">
+                      <a-select-option value="分布式户用">
+                        分布式户用
+                      </a-select-option>
+                      <a-select-option value="分布式商业">
+                        分布式商业
+                      </a-select-option>
+                      <a-select-option value="分布式工业">
+                        分布式工业
+                      </a-select-option>
+                      <a-select-option value="地面电站">
+                        地面电站
+                      </a-select-option>
+                    </a-select>
+                  </a-form-model-item>
                 </a-col>
                 <a-col :span="12">
                   <a-form-model-item label="系统类型">
-                <a-select v-model="editableItem.sysType">
-                  <a-select-option value="光伏+电网">
-                    光伏+电网
-                  </a-select-option>
-                  <a-select-option value="光伏+电网+用电">
-                    光伏+电网+用电
-                  </a-select-option>
-                  <a-select-option value="光伏+电网+用电+储能">
-                    光伏+电网+用电+储能
-                  </a-select-option>
-                </a-select>
-              </a-form-model-item>
+                    <a-select v-model="editableItem.sysType">
+                      <a-select-option value="光伏+电网">
+                        光伏+电网
+                      </a-select-option>
+                      <a-select-option value="光伏+电网+用电">
+                        光伏+电网+用电
+                      </a-select-option>
+                      <a-select-option value="光伏+电网+用电+储能">
+                        光伏+电网+用电+储能
+                      </a-select-option>
+                    </a-select>
+                  </a-form-model-item>
                 </a-col>
               </a-row>
 
               <a-row>
-                <a-col :span="12" v-if="plantId">
+                <a-col :span="12">
                   <a-form-model-item label="装机容量(kWp)" prop="capacity">
                     <a-input v-model="editableItem.capacity" :disabled="true"/>
                   </a-form-model-item>
                 </a-col>
                 <a-col :span="12">
                   <a-form-model-item label="计划自发自用率(%)" v-if="!(editableItem.sysType==='光伏+电网')">
-                <a-input v-model="editableItem.selfUseRate"/>
-              </a-form-model-item>
+                    <a-input v-model="editableItem.selfUseRate"/>
+                  </a-form-model-item>
                 </a-col>
               </a-row>
             </template>
-            <template v-else-if="current === 2">
+          </a-collapse-panel>
+          <a-collapse-panel key="3" header="收益信息" :style="customStyle">
+            <template>
               <!-- 第三步要渲染的组件 -->
               <a-row>
                 <a-col :span="12">
@@ -157,11 +151,13 @@
                 </a-col>
               </a-row>
             </template>
-            <template v-else-if="current === 3">
+          </a-collapse-panel>
+          <a-collapse-panel key="4" header="业主信息" :style="customStyle" v-if="user? user.type === 1: false">
+            <template>
               <!-- 第四步要渲染的组件 -->
               <a-row :gutter="16" style="text-align: left; margin-top: 15px;">
-                <a-col :span="5">
-                  <a-card class="card" title="选择组织机构" >
+                <a-col :span="6">
+                  <a-card class="card" title="组织机构" >
                     <a-tree
                         :tree-data="institutesTree"
                         :show-line="true"
@@ -175,7 +171,7 @@
                   </a-card>
                 </a-col>
 
-                <a-col :span="12">
+                <a-col :span="10">
                   <a-card class="card" title="选择业主">
                     <a-table
                         :columns="userColumns"
@@ -202,7 +198,7 @@
                   </a-card>
                 </a-col>
 
-                <a-col :span="7">
+                <a-col :span="8">
                   <a-card class="card" title="已有业主">
                     <a-table
                         :columns="selectedUserColumns"
@@ -224,26 +220,22 @@
                 </a-col>
               </a-row>
             </template>
-          </a-form-model>
-        </div>
-        <div class="steps-action">
-          <a-button v-if="current > 0" class="steps-but" @click="prev">
-            上一步
-          </a-button>
-          <a-button v-if="current < steps.length - 1" class="steps-but" type="primary" @click="next">
-            下一步
-          </a-button>
-          <a-button
-              v-if="current == steps.length - 1"
-              type="primary"
-              class="steps-but"
-              @click="onAddPlantSubmit"
-          >
-            提交
-          </a-button>
-        </div>
+          </a-collapse-panel>
+        </a-collapse>
+      </a-form-model>
+
+    </div>
+    <div >
+      <div class="steps-action">
+        <a-button
+            type="primary"
+            class="steps-but"
+            @click="onEditPlantSubmit"
+        >
+          保存
+        </a-button>
       </div>
-    </a-drawer>
+    </div>
   </div>
 </template>
 
@@ -256,29 +248,12 @@ window._AMapSecurityConfig = {
 }
 
 export default {
-  name: "PlantFrom",
+  name: "AboutPlant",
   data() {
     return{
       current: 0,
+      plantId: localStorage.getItem("plantId") ? JSON.parse(localStorage.getItem("plantId")) : null,
       form: this.$form.createForm(this, { name: 'coordinated' }),
-      steps: [
-        {
-          title: '基础信息',
-          content: 'First-content',
-        },
-        {
-          title: '系统信息',
-          content: 'Second-content',
-        },
-        {
-          title: '收益信息',
-          content: 'Last-content',
-        },
-        {
-          title: '业主信息',
-          content: 'Last-content',
-        }
-      ],
       editableItem: {
         name: null,
         province: undefined,
@@ -313,7 +288,10 @@ export default {
       cities: [], // 保存当前省份下的所有城市数据
       counties: [], // 保存当前城市下的所有区县数据
       marker: null,
+      customStyle:
+          'background: #ffffff;border-radius: 8px;margin-bottom: 10px;border: 0;overflow: auto; text-align: left',
       // 下面是选择机构相关
+      user: localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : {},
       institutes: [],
       instituteId: null,
       institutesTree: [],
@@ -365,48 +343,22 @@ export default {
       selectedUsers: [],
     };
   },
-  props:{
-    ifVisible: Boolean,
-    plantId: Number,
-  },
   methods:{
     uploadURL() {
       return uploadURL
     },
-    onAddDrawerClose(ifClearFrom) {
-      this.ifVisible = false;
-      this.current = 0;
-      this.provinces = [];
-      this.cities = [];
-      this.counties = [];
-      if(ifClearFrom){
-        for (let key in this.editableItem) {
-          this.editableItem[key] = undefined;
-        }
-        this.editableItem.cover = [];
-      }
-      this.$emit("drawerClose",this.ifVisible);
-    },
-    next() {
-      this.$refs.ruleForm.validate(valid => {
-        if (valid) {
-          this.current++;
-        }
-      });
-    },
-    prev() {
-      this.current--;
-    },
-    getDate(){
-      if(this.plantId){
-        return this.$moment(this.editableItem.buildDate).format('YYYY-MM-DD');
-      }
-      else{
-        const date = new Date();
-        const year = date.getFullYear();
-        const month = date.getMonth() + 1;
-        const day = date.getDate();
-        return `${year}-${month}-${day}`;
+    fetchData(){
+      if(this.plantId){ // 编辑
+        detailPlant(this.plantId).then(res=>{
+          this.editableItem = JSON.parse(JSON.stringify(res.data));
+          this.editableItem.cover = [];
+          this.initAMap();
+          this.selectedInstitute = res.data.instituteId;
+          this.selectedUsers = res.data.userId;
+          this.fetchInstituteData();
+          if(res.data.cover)
+            this.editableItem.cover.push({uid:-1, url:this.coverUrlWithPrefix(res.data.cover)})
+        })
       }
     },
     initAMap() {
@@ -424,9 +376,14 @@ export default {
       }).then((AMap) => {
         this.map = new AMap.Map("container", {
           viewMode: "3D",
-          zoom: 5,
+          zoom: 12,
           zooms: [2, 22],
-          center: [105.602725, 37.076636],
+          center: [this.editableItem.lng, this.editableItem.lat],
+        });
+
+        this.marker = new AMap.Marker({
+          position: [this.editableItem.lng, this.editableItem.lat],
+          map: this.map,
         });
 
         // 获取所有省份的数据
@@ -561,7 +518,7 @@ export default {
         }
       }
     },
-    onAddPlantSubmit(){
+    onEditPlantSubmit(){
       this.$refs.ruleForm.validate(valid => {
         if (valid) {
           let param = JSON.parse(JSON.stringify(this.editableItem));
@@ -620,9 +577,6 @@ export default {
         this.institutesTree = this.institutes
             .filter((item) => item.id === this.instituteId)
             .map((root) => this.buildTree(root.id));
-        if(!this.plantId){ // 新增时当前机构为根机构
-          this.selectedInstitute = this.institutesTree[0].key;
-        }
         this.fetchUserData(this.selectedInstitute);
       }).catch(error => {
         console.error(error)
@@ -666,34 +620,8 @@ export default {
       if(newVal)
         this.onCountyChange();
     })
-    this.$watch('current', (newVal, oldVal) => {
-      if(newVal === 0){
-        this.initAMap();
-      }
-    })
-    this.$watch('ifVisible', (newVal, oldVal) => {
-      // 打开表单
-      if(newVal){
-        this.initAMap();
-        this.instituteId = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")).instituteId : null
-        if(this.plantId){ // 编辑
-          detailPlant(this.plantId).then(res=>{
-            this.editableItem = JSON.parse(JSON.stringify(res.data));
-            this.editableItem.cover = [];
-            this.selectedInstitute = res.data.instituteId;
-            this.selectedUsers = res.data.userId;
-            this.fetchInstituteData();
-            if(res.data.cover)
-              this.editableItem.cover.push({uid:-1, url:this.coverUrlWithPrefix(res.data.cover)})
-          })
-        }else{ //新增
-          this.fetchInstituteData();
-          this.selectedUsers = [];
-        }
-        if(this.$refs.ruleForm)
-          this.$refs.ruleForm.clearValidate();
-      }
-    })
+    this.instituteId = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")).instituteId : null
+    this.fetchData();
   }
 }
 </script>
@@ -714,15 +642,6 @@ export default {
   width: 180px;
   margin: 0 10px ;
   overflow: auto;
-}
-.steps-content {
-  margin-top: 16px;
-  border: 1px dashed #e9e9e9;
-  border-radius: 6px;
-  background-color: #fff;
-  min-height: 100px;
-  text-align: center;
-  padding-top: 20px;
 }
 .steps-action {
   margin-top: 24px;

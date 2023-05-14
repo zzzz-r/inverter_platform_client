@@ -27,6 +27,19 @@
             ]"
           />
         </a-form-item>
+        <a-form-item>
+          <div style="display: flex">
+            <a-input
+                class="input-item"
+                style="width: 60%;margin-right: 20px"
+                placeholder="请输入验证码"
+                v-decorator="[
+              'validCode',
+              { rules: [{ required: true, message: '请输入验证码！' }] },
+            ]"/>
+            <ValidCode @input="createValidCode" />
+          </div>
+        </a-form-item>
         <button class="login-btn">登录</button>
       </a-form>
       <div class="msg">
@@ -38,22 +51,36 @@
 
 <script>
 import { userLogin } from "@/api/api";
+import ValidCode from "@/components/ValidCode.vue";
+import {setPlusRoutes} from "@/router";
 
 export default {
   name: "Login",
+  components: {ValidCode},
   data() {
     return {
-      form: this.$form.createForm(this, { name: 'normal_login' })
+      form: this.$form.createForm(this, { name: 'normal_login' }),
+      validCode: '',
     };
   },
   methods: {
+    // 接收验证码组件提交的 4位验证码
+    createValidCode(data) {
+      this.validCode = data
+    },
     handleSubmit(e) {
       e.preventDefault();
       this.form.validateFields((err, values) => {
         if (!err) {
+          // 校验验证码
+          if(this.form.getFieldValue('validCode').toLowerCase() !== this.validCode.toLowerCase()) {
+            this.$message.error("验证码错误")
+            return
+          }
           userLogin(values).then(res => {
             if(res.code === 0){
               localStorage.setItem("user", JSON.stringify(res.data))  // 存储用户信息到浏览器
+              setPlusRoutes();
               this.$router.push("/platform")
               this.$message.success("登录成功")
             }else {

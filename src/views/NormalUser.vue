@@ -1,7 +1,7 @@
 <template>
   <div class="body-box">
     <a-drawer
-        title="编辑用户"
+        :title="ifAdd? '新增用户':'编辑用户'"
         placement="right"
         :closable="false"
         :visible="ifDrawerVisible"
@@ -71,6 +71,7 @@
               size="middle"
               :rowKey="(record) => record.id"
               :bordered="true"
+              :loading="loading"
           >
             <div
                 slot="filterDropdown"
@@ -190,6 +191,7 @@ export default {
   name: "InstituteUser",
   data() {
     return {
+      loading: false,
       institutes: [],
       instituteId: null,
       institutesTree: [],
@@ -345,10 +347,12 @@ export default {
       })
     },
     fetchUserData(id){
+      this.loading = true;
       listInstituteUser(id, false).then(res => {
         this.users = res.data;
         if(!this.ifShowChildren)
           this.users = this.users.filter(item=> item.instituteId === this.selectedInstitute);
+        this.loading = false;
       }).catch(error => {
         console.error(error)
       })
@@ -451,7 +455,7 @@ export default {
               }
             })
           }else{ // 修改
-            console.log(this.editableItem)
+            // console.log(this.editableItem)
             adminUserEdit(this.editableItem).then(res => {
               if(res.code === 0){
                 this.$message.success("保存成功");

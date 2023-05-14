@@ -118,7 +118,18 @@
         </a-row>
 
         <a-row>
-          <a-col span="12"/>
+          <a-col span="12">
+            <a-form-item label="报警消息推送" style="text-align: left" :label-col="{ span: 7 }" :wrapper-col="{ span: 14 }">
+              <a-radio-group v-decorator="['alarmMessage',{ rules: [{ required: true, }, ], }, ]">
+                <a-radio :value="1">
+                  开启
+                </a-radio>
+                <a-radio :value="0">
+                  关闭
+                </a-radio>
+              </a-radio-group>
+            </a-form-item>
+          </a-col>
           <a-col span="12">
             <a-form-item label="所属机构" :label-col="{ span: 5 }" :wrapper-col="{ span: 19 }">
             <a-input
@@ -143,6 +154,7 @@
 <script>
 import {updateUser} from "@/api/api";
 import {uploadURL} from "@/config/config";
+import {EventBus} from "@/main";
 
 export default {
   data() {
@@ -155,8 +167,8 @@ export default {
   },
   methods: {
     setUserInfo(){
-      this.form.setFieldsValue({userName: this.user.userName, email: this.user.email,
-        phone: this.user.phone, type: this.user.type, institute: this.user.institute,});
+      this.form.setFieldsValue({userName: this.user.userName, email: this.user.email, phone: this.user.phone,
+        type: this.user.type, institute: this.user.institute, alarmMessage: this.user.alarmMessage});
       if(this.user.avatar){
         this.avatar.push({
           uid: -1,
@@ -210,16 +222,24 @@ export default {
       if(this.avatar.length>0) {
         this.form.setFieldsValue({avatar: this.coverUrlWithoutPrefix(this.avatar[0].url)})
       }
+
+      if(this.form.getFieldValue('password') === '') //防止提交空密码
+        this.form.setFieldsValue({password: null, confirm: null});
+      if(this.form.getFieldValue('password') !== null && this.form.getFieldValue('confirm') === null){
+        this.$message.warning("请确认密码！");
+        return;
+      }
+
       e.preventDefault();
       this.form.validateFields((err, values) => {
         if (!err) {
-          console.log('表单数据: ', values);
+          // console.log('表单数据: ', values);
           updateUser(this.user.id, values).then(res => {
             if (res.code === 0) {
               this.$message.success("保存成功")
               localStorage.setItem("user", JSON.stringify(res.data))
+              EventBus.$emit('userInfoChange') // 触发事件修改header头像
             } else {
-              console.log(res)
               this.$message.error(res.msg)
             }
           })

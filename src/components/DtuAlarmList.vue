@@ -9,6 +9,9 @@
         rowKey="id"
         :bordered="true"
     >
+      <template slot="plantName" slot-scope="text" >
+        {{text}}
+      </template>
 
       <template slot="state" slot-scope="text,record">
         <a-tag color="#ff4d4f" v-if="record.state === 1">离线</a-tag>
@@ -18,9 +21,9 @@
         <span>{{ new Date(record.updateTime).toLocaleString() }}</span>
       </template>
 
-      <template slot="operation" slot-scope="text,record" >
-        <a-button type="link">提交工单</a-button>
-      </template>
+<!--      <template slot="operation" slot-scope="text,record" >-->
+<!--        <a-button type="link">提交工单</a-button>-->
+<!--      </template>-->
 
     </a-table>
   </div>
@@ -38,6 +41,8 @@ const columns = [
   {
     title: '所属电站',
     dataIndex: 'plantName',
+    scopedSlots: {customRender: 'plantName'},
+    onFilter: (value, record) => { return record.plantName.indexOf(value) === 0;},
   },
   {
     title: '报警名称',
@@ -53,11 +58,11 @@ const columns = [
       return new Date(a.updateTime).getTime() - new Date(b.updateTime).getTime()
     },
   },
-  {
-    title: '操作',
-    key: 'operation',
-    scopedSlots: { customRender: 'operation' },
-  }
+  // {
+  //   title: '操作',
+  //   key: 'operation',
+  //   scopedSlots: { customRender: 'operation' },
+  // }
 ];
 
 export default {
@@ -68,6 +73,7 @@ export default {
       columns,
       selectedRowKeys: [], // Check here to configure the default column
       loading: false,
+      plantsFilter: [],
     };
   },
   computed: {
@@ -79,8 +85,17 @@ export default {
     fetchData() {
       this.loading = true;
       listAlarmDtu().then( res => {
-        console.log(res.data)
+        // console.log(res.data)
         this.data = res.data;
+        // 建立电站筛选列
+        let plants = Array.from(new Set(this.data.map(item => item.plantName)))
+        this.plantsFilter = plants.map(plant => ({ text: plant, value: plant }))
+        // 将筛选项添加到对应的列
+        this.columns.forEach(column => {
+          if (column.dataIndex === 'plantName') {
+            column.filters = this.plantsFilter;
+          }
+        })
         this.loading=false
       }).catch(error => {
         console.error(error)
